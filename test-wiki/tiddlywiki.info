@@ -1,0 +1,19 @@
+{
+    "description": "eqneditor-v5-plugins TiddlyWiki test wiki",
+    "plugins": [
+        "codecogs/eqneditor"
+    ],
+    "themes": [
+        "tiddlywiki/vanilla",
+        "tiddlywiki/snowwhite"
+    ],
+    "build": {
+        "index": [
+            "--rendertiddler", "$:/core/save/all", "index.html", "text/plain"
+        ],
+        "plugin": [
+            "--rendertiddler", "$:/core/templates/exporters/JsonFile", "codecogs-eqneditor.json",
+            "text/plain", "", "exportFilter", "[[$:/plugins/codecogs/eqneditor]]"
+        ]
+    }
+}

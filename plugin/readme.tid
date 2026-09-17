@@ -1,0 +1,11 @@
+title: readme
+
+Adds an ''Equation'' button to the tiddler editor toolbar that opens the CodeCogs Equation
+Editor (maths view by default, with a toggle to LaTeX markup) and inserts the equation as an
+`<img>` tag at the cursor.
+
+Loads its UI from `editor.codecogs.com` at runtime, same as CodeCogs' other editor plugins -
+override the host with `$:/config/codecogs/eqneditor/Server` and the rendering host with
+`$:/config/codecogs/eqneditor/RenderUrl` if needed. For a plain-HTTP local dev server, set the
+full URLs instead (the default assumes `https://`): `$:/config/codecogs/eqneditor/ScriptUrl` and
+`$:/config/codecogs/eqneditor/CssUrl`.

@@ -1,0 +1,7 @@
+title: $:/plugins/codecogs/eqneditor/toolbar-button
+tags: $:/tags/EditorToolbar
+icon: $:/plugins/codecogs/eqneditor/icon
+caption: Equation
+description: Insert a CodeCogs equation
+condition: [<targetTiddler>!has[type]] [<targetTiddler>get[type]prefix[text/vnd.tiddlywiki]]
+dropdown: $:/plugins/codecogs/eqneditor/dropdown

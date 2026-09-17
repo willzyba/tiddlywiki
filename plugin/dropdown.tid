@@ -1,0 +1,7 @@
+title: $:/plugins/codecogs/eqneditor/dropdown
+
+<div class="cc-eqneditor-dropdown">
+
+<$eqneditor/>
+
+</div>
