@@ -61,6 +61,22 @@ function loadScriptOnce( url ) {
 	return scriptPromises[ url ];
 }
 
+// EqEditor.init() switches the converter every TextArea/MathView/Toolbar construction takes on
+// to fxTeX Pro - skip it and they keep the placeholder converter for their whole lifetime, even
+// once eqneditor.api.min.js itself has loaded. Called once per page; an empty licence is the
+// normal, expected state until a real one is configured.
+var initPromise = null;
+
+function ensureInit( licence ) {
+	if ( initPromise ) return initPromise;
+	initPromise = ( typeof EqEditor.init === "function" )
+		? EqEditor.init( { licence: licence || "" } ).catch( function ( err ) {
+			window.console && console.warn( "fxTeX Pro: " + ( err && err.message || err ) );
+		} )
+		: Promise.resolve();
+	return initPromise;
+}
+
 function loadCssOnce( url ) {
 	if ( document.querySelector( 'link[href="' + url + '"]' ) ) return;
 	var link = document.createElement( "link" );
@@ -80,12 +96,51 @@ function setShowLatexPreference( visible ) {
 
 // Roughly 50% taller than the shared eqneditor.css's own default for either view, so the maths
 // view in particular reads as the main event rather than a strip above the toolbar.
-function injectSizeOverrideOnce() {
+// The API's own injected @font-face for "Latin Modern Math" only carries
+// local("Latin Modern Math") - no url() fallback - so it silently falls back to a generic
+// serif unless that exact font happens to be installed. A later @font-face for the same
+// family replaces the API's src list rather than merging with it, so redeclaring it here
+// with a real url() fixes every equation and symbol on the page, not just this dropdown's.
+function injectSizeOverrideOnce( fontUrl ) {
 	if ( document.getElementById( "cc-eqneditor-size-override" ) ) return;
 	var style = document.createElement( "style" );
 	style.id = "cc-eqneditor-size-override";
-	style.textContent = ".CCMathViewHost, .CCLatexInput { min-height: 220px !important; }";
+	style.textContent = '@font-face { font-family: "Latin Modern Math"; font-display: swap; ' +
+		'src: local("Latin Modern Math"), url("' + fontUrl + '") format("opentype"); }' +
+		// Undo host resets (e.g. .cke_reset_all *) inside the toolbar icons and the maths view's MathML.
+		'.CCToolbar svg, .CCToolbar svg * { font: revert-layer !important; }' +
+		'.CCToolbar svg * { width: revert-layer !important; height: revert-layer !important; }' +
+		'.CCToolbar svg g[font-family="fxTeX Toolbar"] { color: #000 !important; }' +
+		'.CCMathView math, .CCMathView math * { font: revert-layer !important; ' +
+			'width: revert-layer !important; height: revert-layer !important; padding: revert-layer !important; ' +
+			'margin: revert-layer !important; text-transform: revert-layer !important; text-align: revert-layer !important; ' +
+			'box-sizing: revert-layer !important; white-space: revert-layer !important; }' +
+		apiMathRules() +
+		".CCMathViewHost, .CCLatexInput { min-height: 220px !important; }";
 	document.head.appendChild( style );
+}
+
+// Re-asserts the API's own .CCMathView/.fxtex rules, which host resets and revert-layer override.
+function apiMathRules() {
+	var out = '';
+	for ( var i = 0; i < document.styleSheets.length; i++ ) {
+		var rules;
+		try { rules = document.styleSheets[ i ].cssRules; } catch ( e ) { continue; }
+		for ( var j = 0; j < rules.length; j++ ) {
+			var r = rules[ j ], decls = '';
+			if ( !r.selectorText || !/(^|,)\s*\.(fxtex|CCMathView)\b/.test( r.selectorText ) ) continue;
+			for ( var k = 0; k < r.style.length; k++ ) {
+				decls += r.style[ k ] + ':' + r.style.getPropertyValue( r.style[ k ] ) + ' !important;';
+			}
+			if ( decls ) {
+				out += r.selectorText.split( ',' ).map( function ( s ) {
+					s = s.trim();
+					return /^\.CCMathView\b/.test( s ) ? s : '.CCMathView ' + s;
+				} ).join( ',' ) + '{' + decls + '}';
+			}
+		}
+	}
+	return out;
 }
 
 function escapeHtml( s ) {
@@ -128,6 +183,7 @@ EqNEditorWidget.prototype.render = function ( parent, nextSibling ) {
 	// selector.
 	var host = this.wiki.getTiddlerText( "$:/config/codecogs/eqneditor/Server", DEFAULT_SERVER ).trim();
 	var renderUrl = this.wiki.getTiddlerText( "$:/config/codecogs/eqneditor/RenderUrl", DEFAULT_RENDER_URL ).trim();
+	var licence = this.wiki.getTiddlerText( "$:/config/codecogs/eqneditor/Licence", "" ).trim();
 	// Full-URL overrides, not just the host - the default assumes https, which a local dev
 	// server (see other/tiddlywiki/test-wiki's config tiddlers) generally isn't. Same pair of
 	// options every other adapter in eqneditor-v5-plugins exposes (eqneditor_script_url/
@@ -187,8 +243,8 @@ EqNEditorWidget.prototype.render = function ( parent, nextSibling ) {
 		if ( eqToolbar && !visible ) eqToolbar.setActiveTextArea( eqMathView || eqTextArea );
 	}
 
-	loadScriptOnce( scriptUrl ).then( function () {
-		injectSizeOverrideOnce();
+	loadScriptOnce( scriptUrl ).then( function () { return ensureInit( licence ); } ).then( function () {
+		injectSizeOverrideOnce( cssUrl.slice( 0, cssUrl.lastIndexOf( "/" ) + 1 ) + "prototypes/latinmodern-math.otf" );
 
 		eqOutput = new window.EqEditor.Output( ids.output );
 		eqOutput.setRenderURL( renderUrl );
@@ -197,7 +253,7 @@ EqNEditorWidget.prototype.render = function ( parent, nextSibling ) {
 			.addOutput( eqOutput )
 			.addHistoryMenu( new window.EqEditor.History( ids.history ) );
 
-		eqToolbar = window.EqEditor.Toolbar.link( ids.toolbar, 'default', 1.4 ).addTextArea( eqTextArea );
+		eqToolbar = window.EqEditor.Toolbar.link( ids.toolbar ).addTextArea( eqTextArea );
 
 		if ( typeof window.EqEditor.MathView !== "undefined" ) {
 			eqMathView = window.EqEditor.MathView.link( ids.mathview ).addTextArea( eqTextArea );
