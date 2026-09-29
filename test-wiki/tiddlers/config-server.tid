@@ -1,0 +1,4 @@
+title: $:/config/codecogs/eqneditor/Server
+type: text/plain
+
+{{EQN_SERVER}}

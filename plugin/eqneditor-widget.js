@@ -3,21 +3,22 @@ title: $:/plugins/codecogs/eqneditor/eqneditor-widget.js
 type: application/javascript
 module-type: widget
 
-Renders the CodeCogs equation editor (maths view by default, LaTeX markup as a toggle) inside
-the toolbar dropdown (see dropdown.tid/toolbar-button.tid) and, on Insert, dispatches a plain
-tm-edit-text-operation - the same message <$action-sendmessage> would send - carrying the <img>
-markup for the equation just built. Built as a widget rather than a plain wikitext dropdown (the
+Renders the CodeCogs equation editor inside the toolbar dropdown (see dropdown.tid/
+toolbar-button.tid) - the same maths-view-only layout as CodeCogs' other editor plugins, with the
+LaTeX and Inline toggles bottom-left and "Insert as", Cancel and OK bottom-right - and on OK
+dispatches a plain tm-edit-text-operation - the same message <$action-sendmessage> would send -
+carrying the equation as MathML or an <img>. Built as a widget rather than a plain wikitext dropdown (the
 way most core toolbar buttons work, e.g. core/ui/EditorToolbar/picture-dropdown.tid) because the
 CodeCogs UI is only ever the current state of a third-party script's live DOM, not something
 TiddlyWiki's own reactive tiddler/transclusion model has any state for. Insert/Cancel are part of
 this widget's own DOM instead of separate wikitext <$button>s so the click handler can read that
-state - eqTextArea.getTextArea().textContent, eqOutput.exportAs('url') - synchronously, the same
+state - eqTextArea.getTextArea().textContent, eqOutput.exportAs() - synchronously, the same
 way every other adapter in eqneditor-v5-plugins does it (see tinymce/v6/eqneditor.js), rather
 than needing a bridge tiddler kept in sync by polling.
 
 The shared EqEditor API (TextArea/Toolbar/Output/History/MathView) is loaded at runtime from
 editor.codecogs.com, same host and API surface as every other adapter here - override with
-$:/config/codecogs/eqneditor/Server (e.g. "localhost:8010" for local development against
+$:/config/codecogs/eqneditor/Server (a host, or a full origin such as "http://localhost:8010" for local development against
 eqneditor-v5-www) and $:/config/codecogs/eqneditor/RenderUrl.
 
 \*/
@@ -27,11 +28,6 @@ var Widget = require( "$:/core/modules/widgets/widget.js" ).widget;
 
 var DEFAULT_SERVER = "editor.codecogs.com";
 var DEFAULT_RENDER_URL = "https://latex.codecogs.com";
-
-// Remembers which view (maths or LaTeX markup) the author last chose, across dropdown opens and
-// page loads - the same cookie name every other eqneditor-v5-plugins adapter uses, so the choice
-// carries across editors too, not just across opens of this one.
-var LATEX_COOKIE = "cc_eqneditor_show_latex";
 
 var scriptPromises = {};
 
@@ -85,38 +81,70 @@ function loadCssOnce( url ) {
 	document.head.appendChild( link );
 }
 
-function getShowLatexPreference( fallback ) {
-	var match = document.cookie.match( /(?:^|; )cc_eqneditor_show_latex=([^;]*)/ );
-	return match ? match[ 1 ] === "1" : fallback;
-}
-
-function setShowLatexPreference( visible ) {
-	document.cookie = LATEX_COOKIE + "=" + ( visible ? "1" : "0" ) + "; path=/; max-age=31536000; SameSite=Lax";
-}
-
-// Roughly 50% taller than the shared eqneditor.css's own default for either view, so the maths
-// view in particular reads as the main event rather than a strip above the toolbar.
-// The API's own injected @font-face for "Latin Modern Math" only carries
-// local("Latin Modern Math") - no url() fallback - so it silently falls back to a generic
-// serif unless that exact font happens to be installed. A later @font-face for the same
-// family replaces the API's src list rather than merging with it, so redeclaring it here
-// with a real url() fixes every equation and symbol on the page, not just this dropdown's.
-function injectSizeOverrideOnce( fontUrl ) {
-	if ( document.getElementById( "cc-eqneditor-size-override" ) ) return;
+// The API's own @font-face for "Latin Modern Math" only carries local(), so it falls back to a
+// generic serif unless the font happens to be installed; redeclaring it here adds a real url().
+// The rest lays the editor out to fill the dropdown and gives it the same bottom bar as the
+// other plugins, !important where TiddlyWiki's own dropdown/button styles would otherwise win.
+function injectStyleOverridesOnce( fontUrl ) {
+	if ( document.getElementById( "cc-eqneditor-style-overrides" ) ) return;
 	var style = document.createElement( "style" );
-	style.id = "cc-eqneditor-size-override";
+	style.id = "cc-eqneditor-style-overrides";
 	style.textContent = '@font-face { font-family: "Latin Modern Math"; font-display: swap; ' +
 		'src: local("Latin Modern Math"), url("' + fontUrl + '") format("opentype"); }' +
 		// Undo host resets (e.g. .cke_reset_all *) inside the toolbar icons and the maths view's MathML.
-		'.CCToolbar svg, .CCToolbar svg * { font: revert-layer !important; }' +
-		'.CCToolbar svg * { width: revert-layer !important; height: revert-layer !important; }' +
+		'.CCToolbar svg:has(g[font-family]), .CCToolbar svg:has(g[font-family]) * { font: revert-layer !important; }' +
+		// Older API builds draw the icons as plain <text>, fonted by the API's own .cc_panel rule instead.
+		'.CCToolbar svg:not(:has(g[font-family])) { font: normal normal 16px "fxTeX Toolbar" !important; }' +
+		'.CCToolbar svg:not(:has(g[font-family])) * { font: inherit !important; }' +
+		'.CCToolbar svg, .CCToolbar svg * { width: revert-layer !important; height: revert-layer !important; max-width: revert-layer !important; }' +
 		'.CCToolbar svg g[font-family="fxTeX Toolbar"] { color: #000 !important; }' +
 		'.CCMathView math, .CCMathView math * { font: revert-layer !important; ' +
 			'width: revert-layer !important; height: revert-layer !important; padding: revert-layer !important; ' +
 			'margin: revert-layer !important; text-transform: revert-layer !important; text-align: revert-layer !important; ' +
 			'box-sizing: revert-layer !important; white-space: revert-layer !important; }' +
 		apiMathRules() +
-		".CCMathViewHost, .CCLatexInput { min-height: 220px !important; }";
+		'.CCEqnEditor { display: flex !important; flex-direction: column !important; height: 480px !important; }' +
+		'.CCEqnEditor .CCEditorBar, .CCEqnEditor .CCToolbarHost { flex: 0 0 auto; }' +
+		// Left to stretch across the dropdown, the toolbar's "fit" pass unwraps every button group
+		// wider than the reference layout; sized to its own content it wraps the same way.
+		'.CCEqnEditor .CCToolbarHost { align-self: flex-start; width: auto; }' +
+		'.CCEqnEditor .CCMathViewHost { flex: 1 1 auto; min-height: 0; display: flex; align-items: center; ' +
+			'justify-content: center; overflow: auto; }' +
+		'.CCEqnEditor[data-inline="on"] .CCMathViewHost { justify-content: flex-start; }' +
+		'.CCEqnEditor[data-latex="on"] .CCMathViewHost { display: none !important; }' +
+		'.CCEqnEditor .CCLatexInput { flex: 1 1 auto; min-height: 0; overflow: auto; }' +
+		'.CCEqnEditor[data-latex="off"] .CCLatexInput { display: none !important; }' +
+		'.CCEqnEditor .CCEqnOutput-hidden { display: none !important; }' +
+		// TiddlyWiki styles every button in a dropdown as a full-width block, which stacked the history buttons.
+		'.tc-drop-down .CCEqnEditor .CCHistory button { display: inline-block !important; width: auto !important; padding: revert-layer !important; margin: revert-layer !important; ' +
+			'text-align: center !important; line-height: normal !important; vertical-align: middle !important; }' +
+		// The bottom bar: toggles left, Insert-as and the dialog's buttons right, one type size. All !important - host dialog resets otherwise restyle it.
+		'.cc-eqn-bar { display: flex !important; align-items: center !important; gap: 16px !important; flex: 0 0 auto !important; ' +
+			'margin: 8px 0 0 !important; padding: 10px 0 0 !important; border: 0 !important; border-top: 1px solid #e2e8f0 !important; ' +
+			'background: none !important; font: 13px/1.3 system-ui, -apple-system, "Segoe UI", Arial, sans-serif !important; color: #1c2530 !important; }' +
+		'.cc-eqn-bar-right { display: flex !important; align-items: center !important; gap: 8px !important; margin: 0 0 0 auto !important; padding: 0 !important; font: inherit !important; color: inherit !important; }' +
+		'.cc-eqn-bar .cc-switch { display: inline-flex !important; align-items: center !important; gap: 6px !important; margin: 0 !important; ' +
+			'padding: 0 !important; font: inherit !important; color: #54647c !important; cursor: pointer !important; user-select: none !important; white-space: nowrap !important; }' +
+		'.cc-eqn-bar .cc-switch input { position: absolute !important; width: 1px !important; height: 1px !important; margin: -1px !important; ' +
+			'padding: 0 !important; border: 0 !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; opacity: 0 !important; }' +
+		'.cc-eqn-bar .cc-switch-track { position: relative !important; display: inline-block !important; flex: 0 0 auto !important; width: 28px !important; ' +
+			'height: 16px !important; margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 8px !important; ' +
+			'background: #ccc !important; transition: background .2s !important; }' +
+		'.cc-eqn-bar .cc-switch-knob { position: absolute !important; display: block !important; top: 2px !important; left: 2px !important; ' +
+			'width: 12px !important; height: 12px !important; margin: 0 !important; border-radius: 50% !important; background: #fff !important; transition: left .2s !important; }' +
+		'.cc-eqn-bar .cc-switch input:checked + .cc-switch-track { background: #4caf50 !important; }' +
+		'.cc-eqn-bar .cc-switch input:checked + .cc-switch-track .cc-switch-knob { left: 14px !important; }' +
+		'.cc-eqn-bar .cc-switch input:focus-visible + .cc-switch-track { outline: 2px solid #003794 !important; outline-offset: 2px !important; }' +
+		'.cc-eqn-bar .cc-switch input:disabled ~ * { opacity: .5 !important; cursor: default !important; }' +
+		'.cc-eqn-bar .cc-switch-label { font: inherit !important; color: inherit !important; }' +
+		'.cc-eqn-bar .cc-switch input:checked ~ .cc-switch-label { color: #003794 !important; font-weight: 600 !important; }' +
+		'.cc-eqn-bar .cc-eqn-select { width: auto !important; height: 30px !important; margin: 0 !important; padding: 0 8px !important; ' +
+			'border: 1px solid #cbd5e0 !important; border-radius: 4px !important; background: #fff !important; font: inherit !important; color: #1c2530 !important; cursor: pointer !important; }' +
+		'.cc-eqn-bar .cc-eqn-btn { display: inline-flex !important; align-items: center !important; height: 30px !important; margin: 0 !important; ' +
+			'padding: 0 16px !important; border: 1px solid #cbd5e0 !important; border-radius: 4px !important; background: #fff !important; ' +
+			'font: inherit !important; color: #1c2530 !important; cursor: pointer !important; box-shadow: none !important; }' +
+		'.cc-eqn-bar .cc-eqn-btn * { font: inherit !important; color: inherit !important; }' +
+		'.cc-eqn-bar .cc-eqn-btn.cc-eqn-primary { background: #2c7a4b !important; border-color: #2c7a4b !important; color: #fff !important; }';
 	document.head.appendChild( style );
 }
 
@@ -143,10 +171,29 @@ function apiMathRules() {
 	return out;
 }
 
-function escapeHtml( s ) {
-	return String( s )
-		.replace( /&/g, "&amp;" ).replace( /</g, "&lt;" )
-		.replace( />/g, "&gt;" ).replace( /"/g, "&quot;" );
+// A wikitext attribute value, quoted with whichever of TiddlyWiki's quote forms the value
+// doesn't itself contain.
+function wikitextAttr( value ) {
+	if ( value.indexOf( '"' ) === -1 ) return '"' + value + '"';
+	if ( value.indexOf( "'" ) === -1 ) return "'" + value + "'";
+	return '"""' + value.replace( /"""/g, '""' ) + '"""';
+}
+
+function switchHtml( id, label, title ) {
+	return '<label class="cc-switch" title="' + title + '">' +
+		'<input type="checkbox" id="' + id + '">' +
+		'<span class="cc-switch-track"><span class="cc-switch-knob"></span></span>' +
+		'<span class="cc-switch-label">' + label + '</span>' +
+	'</label>';
+}
+
+// TiddlyWiki parses the text inside HTML elements as wikitext, so the LaTeX source the
+// converter keeps in <annotation> (where "--", "''" or "^^" would become formatting) is dropped.
+// The <math> element's title still carries it, and attribute values aren't parsed.
+function mathmlForWikitext( mathml ) {
+	return mathml
+		.replace( /<annotation(-xml)?\b[^>]*>[\s\S]*?<\/annotation(-xml)?>/g, "" )
+		.replace( />\s+</g, "><" );
 }
 
 var instanceCount = 0;
@@ -171,9 +218,10 @@ EqNEditorWidget.prototype.render = function ( parent, nextSibling ) {
 		toolbar: "cc-eqn-tw-toolbar-" + n,
 		mathview: "cc-eqn-tw-mathview-" + n,
 		latexInput: "cc-eqn-tw-latex-" + n,
-		preview: "cc-eqn-tw-preview-" + n,
 		output: "cc-eqn-tw-output-" + n,
-		toggle: "cc-eqn-tw-toggle-" + n
+		toggleInline: "cc-eqn-tw-toggle-inline-" + n,
+		toggleLatex: "cc-eqn-tw-toggle-latex-" + n,
+		insertMode: "cc-eqn-tw-insert-mode-" + n
 	};
 
 	// .trim() because a config tiddler's text commonly carries a trailing newline (any .tid
@@ -182,39 +230,41 @@ EqNEditorWidget.prototype.render = function ( parent, nextSibling ) {
 	// loadScriptOnce/loadCssOnce, breaking both silently for the URL and throwing for the
 	// selector.
 	var host = this.wiki.getTiddlerText( "$:/config/codecogs/eqneditor/Server", DEFAULT_SERVER ).trim();
+	// A bare host means https; a full origin (e.g. http://localhost:8010 for local development) is used as it is.
+	var origin = /^https?:\/\//.test( host ) ? host.replace( /\/+$/, "" ) : "https://" + host;
 	var renderUrl = this.wiki.getTiddlerText( "$:/config/codecogs/eqneditor/RenderUrl", DEFAULT_RENDER_URL ).trim();
 	var licence = this.wiki.getTiddlerText( "$:/config/codecogs/eqneditor/Licence", "" ).trim();
 	// Full-URL overrides, not just the host - the default assumes https, which a local dev
-	// server (see other/tiddlywiki/test-wiki's config tiddlers) generally isn't. Same pair of
-	// options every other adapter in eqneditor-v5-plugins exposes (eqneditor_script_url/
-	// eqneditor_css_url).
+	// server (see other/tiddlywiki/test-wiki's config tiddlers) generally isn't.
 	var scriptUrl = this.wiki.getTiddlerText( "$:/config/codecogs/eqneditor/ScriptUrl",
-		"https://" + host + "/eqneditor.api.min.js" ).trim();
+		origin + "/eqneditor.api.min.js" ).trim();
 	var cssUrl = this.wiki.getTiddlerText( "$:/config/codecogs/eqneditor/CssUrl",
-		"https://" + host + "/eqneditor.css" ).trim();
-	var showLatex = getShowLatexPreference( false );
+		origin + "/eqneditor.css" ).trim();
 
 	var domNode = this.document.createElement( "div" );
 	domNode.id = ids.root;
 	domNode.className = "CCEqnEditor";
-	domNode.setAttribute( "data-latex", showLatex ? "on" : "off" );
+	domNode.setAttribute( "data-latex", "off" );
+	domNode.setAttribute( "data-inline", "off" );
 	domNode.innerHTML =
 		'<div class="CCEditorBar"><div id="' + ids.history + '" class="CCHistory"></div></div>' +
-		'<div id="' + ids.toolbar + '"></div>' +
+		'<div id="' + ids.toolbar + '" class="CCToolbarHost"></div>' +
+		'<div id="' + ids.mathview + '" class="CCMathViewHost"></div>' +
 		'<div id="' + ids.latexInput + '" class="CCLatexInput" autocorrect="off" ' +
 			'placeholder="Write LaTeX here..."></div>' +
-		'<div id="' + ids.mathview + '" class="CCMathViewHost"></div>' +
-		'<div id="' + ids.toggle + '" class="CCViewToggle">' +
-			'<label class="cc-switch" title="Show or hide the LaTeX markup above the equation">' +
-				'<input type="checkbox" data-latex-toggle' + ( showLatex ? " checked" : "" ) + '>' +
-				'<span class="cc-switch-track"><span class="cc-switch-knob"></span></span>' +
-				'<span class="cc-switch-label">LaTeX markup</span>' +
-			'</label>' +
-		'</div>' +
-		'<div id="' + ids.preview + '" class="CCEqnOutput"><img id="' + ids.output + '" alt=""></div>' +
-		'<div class="cc-eqneditor-actions">' +
-			'<button type="button" class="cc-eqneditor-cancel">Cancel</button>' +
-			'<button type="button" class="cc-eqneditor-insert" disabled>Insert</button>' +
+		// Not shown: eqOutput needs an element to bind to, to build the SVG URL.
+		'<img id="' + ids.output + '" class="CCEqnOutput-hidden" alt="">' +
+		'<div class="cc-eqn-bar">' +
+			switchHtml( ids.toggleInline, "Inline", "Left-align the equation instead of centring it" ) +
+			switchHtml( ids.toggleLatex, "LaTeX markup", "Show or hide the LaTeX markup" ) +
+			'<div class="cc-eqn-bar-right">' +
+				'<select class="cc-eqn-select" id="' + ids.insertMode + '" title="How to insert the equation">' +
+					'<option value="mathml" selected>Insert as MathML</option>' +
+					'<option value="svg">Insert as image (SVG)</option>' +
+				'</select>' +
+				'<button type="button" class="cc-eqn-btn cc-cancel">Cancel</button>' +
+				'<button type="button" class="cc-eqn-btn cc-eqn-primary cc-ok" disabled>OK</button>' +
+			'</div>' +
 		'</div>';
 
 	parent.insertBefore( domNode, nextSibling );
@@ -225,26 +275,14 @@ EqNEditorWidget.prototype.render = function ( parent, nextSibling ) {
 		if ( stateTitle ) self.wiki.deleteTiddler( stateTitle );
 	}
 
-	domNode.querySelector( ".cc-eqneditor-cancel" ).addEventListener( "click", closeDropdown );
+	domNode.querySelector( ".cc-cancel" ).addEventListener( "click", closeDropdown );
 
 	loadCssOnce( cssUrl );
 
 	var eqOutput = null, eqTextArea = null, eqMathView = null, eqToolbar = null;
 
-	function applyLatexVisible( visible ) {
-		showLatex = visible;
-		setShowLatexPreference( visible );
-
-		domNode.setAttribute( "data-latex", visible ? "on" : "off" );
-
-		var box = domNode.querySelector( "#" + ids.toggle + " input[data-latex-toggle]" );
-		if ( box ) box.checked = visible;
-
-		if ( eqToolbar && !visible ) eqToolbar.setActiveTextArea( eqMathView || eqTextArea );
-	}
-
 	loadScriptOnce( scriptUrl ).then( function () { return ensureInit( licence ); } ).then( function () {
-		injectSizeOverrideOnce( cssUrl.slice( 0, cssUrl.lastIndexOf( "/" ) + 1 ) + "prototypes/latinmodern-math.otf" );
+		injectStyleOverridesOnce( cssUrl.slice( 0, cssUrl.lastIndexOf( "/" ) + 1 ) + "prototypes/latinmodern-math.otf" );
 
 		eqOutput = new window.EqEditor.Output( ids.output );
 		eqOutput.setRenderURL( renderUrl );
@@ -255,28 +293,49 @@ EqNEditorWidget.prototype.render = function ( parent, nextSibling ) {
 
 		eqToolbar = window.EqEditor.Toolbar.link( ids.toolbar ).addTextArea( eqTextArea );
 
+		var latexToggle = domNode.querySelector( "#" + ids.toggleLatex );
+
 		if ( typeof window.EqEditor.MathView !== "undefined" ) {
 			eqMathView = window.EqEditor.MathView.link( ids.mathview ).addTextArea( eqTextArea );
 			eqToolbar.addMathView( eqMathView );
 		} else {
-			showLatex = true;
+			// Without a maths view the markup is the only thing to edit in - force it visible
+			// and lock the toggle so it cannot be switched to an empty pane.
+			domNode.setAttribute( "data-latex", "on" );
+			latexToggle.checked = true;
+			latexToggle.disabled = true;
 		}
 
-		applyLatexVisible( showLatex );
-
-		var toggle = domNode.querySelector( "#" + ids.toggle );
-		toggle.addEventListener( "change", function ( e ) {
-			if ( e.target.matches( "input[data-latex-toggle]" ) ) applyLatexVisible( e.target.checked );
+		latexToggle.addEventListener( "change", function ( e ) {
+			var visible = e.target.checked;
+			domNode.setAttribute( "data-latex", visible ? "on" : "off" );
+			// Hiding a pane moves the toolbar's target to the other one, so a button pressed
+			// straight afterwards doesn't insert into something the author can't see.
+			eqToolbar.setActiveTextArea( visible ? eqTextArea : ( eqMathView || eqTextArea ) );
 		} );
 
-		var insertBtn = domNode.querySelector( ".cc-eqneditor-insert" );
-		insertBtn.disabled = false;
-		insertBtn.addEventListener( "click", function () {
+		domNode.querySelector( "#" + ids.toggleInline ).addEventListener( "change", function ( e ) {
+			var inline = e.target.checked;
+			domNode.setAttribute( "data-inline", inline ? "on" : "off" );
+			if ( eqMathView ) eqMathView.setInline( inline );
+			eqOutput.setInline( inline );
+		} );
+
+		var okBtn = domNode.querySelector( ".cc-ok" );
+		okBtn.disabled = false;
+		okBtn.addEventListener( "click", function () {
 			var latex = eqTextArea.getTextArea().textContent.trim();
 			if ( !latex ) return;
 
-			var html = '<img src="' + escapeHtml( eqOutput.exportAs( "url" ) ) + '" alt="' +
-				escapeHtml( latex ) + '">';
+			var mode = domNode.querySelector( "#" + ids.insertMode ).value;
+			// Wikitext attribute values are taken literally - no entity decoding - so they are
+			// written raw rather than HTML-escaped: "&amp;" would reach latex.codecogs.com as-is.
+			// referrerpolicy explicitly: latex.codecogs.com identifies the calling site by referer,
+			// and a stricter page policy would otherwise send none.
+			var text = mode === "svg"
+				? '<img src="' + eqOutput.exportAs( "url" ) + '" alt=' + wikitextAttr( latex ) +
+					' referrerpolicy="origin">'
+				: mathmlForWikitext( eqOutput.exportAs( "mathml" ) );
 
 			// The same message <$action-sendmessage $message="tm-edit-text-operation"
 			// $param="insert-text" text="..."/> would send - inserting at the cursor (replacing
@@ -285,9 +344,10 @@ EqNEditorWidget.prototype.render = function ( parent, nextSibling ) {
 			self.dispatchEvent( {
 				type: "tm-edit-text-operation",
 				param: "insert-text",
-				paramObject: { text: html }
+				paramObject: { text: text }
 			} );
 
+			eqTextArea.pushToHistory();
 			closeDropdown();
 		} );
 	} ).catch( function ( err ) {

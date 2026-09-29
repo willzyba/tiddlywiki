@@ -2,42 +2,10 @@ title: $:/plugins/codecogs/eqneditor/styles
 tags: $:/tags/Stylesheet
 type: text/css
 
+/* Wide enough for the equation toolbar without it wrapping; narrower screens get what fits. */
 .cc-eqneditor-dropdown {
-	padding: 8px;
-	width: 420px;
-	max-width: 90vw;
-}
-
-/* The shared eqneditor.css (loaded from editor.codecogs.com, see eqneditor-widget.js) only
-   hides the LaTeX box for data-latex="off" - it never hides the maths view for "on", so without
-   this the toggle would leave both views stacked instead of replacing one with the other. */
-.CCEqnEditor[data-latex="on"] .CCMathViewHost {
-	display: none;
-}
-
-.cc-eqneditor-actions {
-	display: flex;
-	justify-content: flex-end;
-	gap: 8px;
-	margin-top: 8px;
-}
-
-.cc-eqneditor-actions button {
-	padding: 6px 16px;
-	border-radius: 4px;
-	border: 1px solid #cbd5e0;
-	background: #fff;
-	cursor: pointer;
-	font-size: 13px;
-}
-
-.cc-eqneditor-actions .cc-eqneditor-insert {
-	background: #2c7a4b;
-	border-color: #2c7a4b;
-	color: #fff;
-}
-
-.cc-eqneditor-actions .cc-eqneditor-insert:disabled {
-	opacity: 0.5;
-	cursor: default;
+	padding: 10px 12px;
+	width: 850px;
+	max-width: calc(100vw - 32px);
+	box-sizing: border-box;
 }

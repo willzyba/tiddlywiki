@@ -1,4 +1,0 @@
-title: $:/config/codecogs/eqneditor/ScriptUrl
-type: text/plain
-
-http://localhost:8010/eqneditor.api.min.js

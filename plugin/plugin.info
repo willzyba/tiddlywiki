@@ -2,7 +2,7 @@
     "title": "$:/plugins/codecogs/eqneditor",
     "description": "Insert CodeCogs equations into tiddlers from the editor toolbar",
     "author": "CodeCogs",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "core-version": ">=5.4.0",
     "list": "readme"
 }

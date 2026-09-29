@@ -11,9 +11,10 @@ here can plug into, so it couldn't be "updated" the way CKEditor 4/TinyMCE 4 wer
 ## `plugin/`
 
 A proper TiddlyWiki 5 plugin: an ''Equation'' button in the tiddler editor toolbar that opens the
-CodeCogs Equation Editor (maths view by default, with a toggle to LaTeX markup - the state is
-remembered in a cookie, shared with every other adapter in `eqneditor-v5-plugins`) and inserts the
-equation as an `<img>` tag at the cursor.
+CodeCogs Equation Editor in the same layout as every other adapter in this repo - toolbar and
+maths view on top, then a bottom bar with the *Inline* and *LaTeX markup* toggles on the left and
+*Insert as*, *Cancel* and *OK* on the right. It inserts the equation at the cursor as MathML (the
+default - TiddlyWiki renders it natively) or as an SVG `<img>` from the rendering service.
 
 - `eqneditor-widget.js` - a custom widget (TiddlyWiki's mechanism for embedding a third-party
   JS library's own live DOM, rather than something wikitext's own reactive model has state for)
@@ -21,18 +22,20 @@ equation as an `<img>` tag at the cursor.
 - `toolbar-button.tid` / `dropdown.tid` - the toolbar button and the popup it opens, following the
   same `dropdown:` pattern TiddlyWiki's own core toolbar buttons use (e.g.
   `core/ui/EditorToolbar/picture.tid`).
-- `styles.tid` - layout for the dropdown, plus one rule the shared `eqneditor.css` (loaded at
-  runtime from `editor.codecogs.com`) doesn't itself provide: hiding the maths view when the
-  toggle switches to LaTeX markup. Without it the shared stylesheet only hides the LaTeX box when
-  the toggle is off, leaving both views stacked instead of one replacing the other.
+- `styles.tid` - the dropdown's size (850px, capped to the window). Everything else the dialog
+  needs - including undoing TiddlyWiki's `.tc-drop-down svg`/button rules, which would otherwise
+  shrink the toolbar icons - is injected by `eqneditor-widget.js`, as in the other adapters.
 - `icon.tid`, `readme.tid`, `plugin.info` - the plugin's icon, in-wiki description, and manifest.
 
 Loads its UI from `editor.codecogs.com` at runtime, same as CodeCogs' other editor plugins.
-Override the host with `$:/config/codecogs/eqneditor/Server` and the rendering host with
-`$:/config/codecogs/eqneditor/RenderUrl`; for a plain-HTTP local dev server (where the default
-`https://` assumption breaks), set the full URLs instead with
-`$:/config/codecogs/eqneditor/ScriptUrl` and `$:/config/codecogs/eqneditor/CssUrl` (see
-`test-wiki/tiddlers/config-script-url.tid` for an example).
+Set your fxTeX Pro licence key in `$:/config/codecogs/eqneditor/Licence`. Override the host with
+`$:/config/codecogs/eqneditor/Server` - a host (https is assumed) or a full origin such as
+`http://localhost:8010` for a local dev server - and the rendering host with
+`$:/config/codecogs/eqneditor/RenderUrl`. `$:/config/codecogs/eqneditor/ScriptUrl` and
+`$:/config/codecogs/eqneditor/CssUrl` still override the two URLs individually. See
+`test-wiki/tiddlers/config-server.tid` and `config-licence.tid`; their `{{...}}` placeholders
+are filled in by whatever serves the wiki (`.claude/dev-server.py` locally, the fxplugins
+container in production).
 
 ## `test-wiki/`
 
@@ -51,8 +54,9 @@ This produces (git-ignored, regenerated each run - see `../.gitignore`):
   onto *any* other TiddlyWiki 5 (including a plain `empty.html` from tiddlywiki.com) to install it
   there via TiddlyWiki's own built-in import - no server or CLI needed on the receiving end.
 
-Verified end-to-end in a real browser against TiddlyWiki 5.4.1 (the current release as of this
-writing): the toolbar button opens the dropdown, typing into the maths view renders MathML live
-and updates the preview image, the toggle correctly swaps to/from the LaTeX markup box, Insert
-places the `<img>` at the cursor via a plain `tm-edit-text-operation` message (the same one
-TiddlyWiki's own toolbar buttons send), and the equation renders inline once saved.
+Verified in a real browser against TiddlyWiki 5.4.1: the toolbar matches the reference editor,
+the toggles swap views, and OK inserts at the cursor via a plain `tm-edit-text-operation`
+message (the same one TiddlyWiki's own toolbar buttons send). An SVG insert renders once saved.
+MathML is written with its `<annotation>` and inter-tag whitespace removed, since TiddlyWiki
+would otherwise parse them as wikitext; the image's `alt` is quoted for wikitext, where
+attribute values are not HTML-entity-decoded.
