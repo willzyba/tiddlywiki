@@ -27,7 +27,7 @@ default - TiddlyWiki renders it natively) or as an SVG `<img>` from the renderin
   shrink the toolbar icons - is injected by `eqneditor-widget.js`, as in the other adapters.
 - `icon.tid`, `readme.tid`, `plugin.info` - the plugin's icon, in-wiki description, and manifest.
 
-Loads its UI from `editor.codecogs.com` at runtime, same as CodeCogs' other editor plugins.
+Loads its UI from `fxeditor.codecogs.com` at runtime, same as CodeCogs' other editor plugins.
 Set your fxTeX Pro licence key in `$:/config/codecogs/eqneditor/Licence`. Override the host with
 `$:/config/codecogs/eqneditor/Server` - a host (https is assumed) or a full origin such as
 `http://localhost:8010` for a local dev server - and the rendering host with

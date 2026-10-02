@@ -1,0 +1,18 @@
+{
+    "description": "The wiki in fxplugins.codecogs.com downloads - see site/js/example.js fillWiki()",
+    "plugins": [
+        "codecogs/eqneditor"
+    ],
+    "themes": [
+        "tiddlywiki/vanilla",
+        "tiddlywiki/snowwhite"
+    ],
+    "build": {
+        "index": [
+            "--rendertiddler",
+            "$:/core/save/all",
+            "index.html",
+            "text/plain"
+        ]
+    }
+}

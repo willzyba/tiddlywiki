@@ -17,7 +17,7 @@ way every other adapter in eqneditor-v5-plugins does it (see tinymce/v6/eqnedito
 than needing a bridge tiddler kept in sync by polling.
 
 The shared EqEditor API (TextArea/Toolbar/Output/History/MathView) is loaded at runtime from
-editor.codecogs.com, same host and API surface as every other adapter here - override with
+fxeditor.codecogs.com, same host and API surface as every other adapter here - override with
 $:/config/codecogs/eqneditor/Server (a host, or a full origin such as "http://localhost:8010" for local development against
 eqneditor-v5-www) and $:/config/codecogs/eqneditor/RenderUrl.
 
@@ -26,7 +26,7 @@ eqneditor-v5-www) and $:/config/codecogs/eqneditor/RenderUrl.
 
 var Widget = require( "$:/core/modules/widgets/widget.js" ).widget;
 
-var DEFAULT_SERVER = "editor.codecogs.com";
+var DEFAULT_SERVER = "fxeditor.codecogs.com";
 var DEFAULT_RENDER_URL = "https://latex.codecogs.com";
 
 var scriptPromises = {};
@@ -149,6 +149,41 @@ function injectStyleOverridesOnce( fontUrl ) {
 }
 
 // Re-asserts the API's own .CCMathView/.fxtex rules, which host resets and revert-layer override.
+// The `design` option (see the README): how the editor looks, set by the site rather than the
+// author. The toolbar"s rows and scale go to Toolbar.link() itself; everything else is applied
+// here, once the editor is mounted - CSS scoped to this editor"s root, then the starting state of
+// the LaTeX toggle and the "Insert as" menu.
+var designCount = 0;
+function applyDesign( root, design, latexToggle, insertSelect ) {
+	if ( !root || !design ) return;
+	if ( !root.id ) root.id = "cc-eqn-design-" + ( ++designCount );
+	var sel = "#" + root.id, css = "";
+	var colour = String( design.colour || "" );
+	if ( /^(#[0-9a-f]{3,8}|[a-z]+)$/i.test( colour ) ) {
+		css += sel + " { --cc-accent: " + colour + ";" +
+			" --cc-accent-soft: color-mix(in srgb, " + colour + " 11%, #fff);" +
+			" --cc-accent-soft-ring: color-mix(in srgb, " + colour + " 28%, #fff);" +
+			" --cc-accent-mid: color-mix(in srgb, " + colour + " 22%, #fff);" +
+			" --cc-accent-mid-ring: color-mix(in srgb, " + colour + " 43%, #fff); }";
+	}
+	if ( Number( design.mathSize ) > 0 ) css += sel + " .CCMathView { font-size: " + Number( design.mathSize ) + "px !important; }";
+	if ( Number( design.latexSize ) > 0 ) css += sel + " .CCLatexInput { font-size: " + Number( design.latexSize ) + "px !important; }";
+	if ( design.toolbar === false ) css += sel + " .CCToolbar { display: none !important; }";
+	if ( design.history === false ) css += sel + " .CCEditorBar { display: none !important; }";
+	if ( css ) {
+		var style = document.createElement( "style" );
+		style.textContent = css;
+		root.appendChild( style );
+	}
+	if ( insertSelect && design.insertAs && insertSelect.querySelector( 'option[value="' + design.insertAs + '"]' ) ) {
+		insertSelect.value = design.insertAs;
+	}
+	if ( latexToggle && design.latex && !latexToggle.checked && !latexToggle.disabled ) {
+		latexToggle.checked = true;
+		latexToggle.dispatchEvent( new Event( "change", { bubbles: true } ) );
+	}
+}
+
 function apiMathRules() {
 	var out = '';
 	for ( var i = 0; i < document.styleSheets.length; i++ ) {
@@ -234,6 +269,9 @@ EqNEditorWidget.prototype.render = function ( parent, nextSibling ) {
 	var origin = /^https?:\/\//.test( host ) ? host.replace( /\/+$/, "" ) : "https://" + host;
 	var renderUrl = this.wiki.getTiddlerText( "$:/config/codecogs/eqneditor/RenderUrl", DEFAULT_RENDER_URL ).trim();
 	var licence = this.wiki.getTiddlerText( "$:/config/codecogs/eqneditor/Licence", "" ).trim();
+	// The look of the editor, as JSON - see the `design` option in the README.
+	var design = {};
+	try { design = JSON.parse( this.wiki.getTiddlerText( "$:/config/codecogs/eqneditor/Design", "{}" ) || "{}" ) || {}; } catch ( e ) { design = {}; }
 	// Full-URL overrides, not just the host - the default assumes https, which a local dev
 	// server (see other/tiddlywiki/test-wiki's config tiddlers) generally isn't.
 	var scriptUrl = this.wiki.getTiddlerText( "$:/config/codecogs/eqneditor/ScriptUrl",
@@ -291,7 +329,7 @@ EqNEditorWidget.prototype.render = function ( parent, nextSibling ) {
 			.addOutput( eqOutput )
 			.addHistoryMenu( new window.EqEditor.History( ids.history ) );
 
-		eqToolbar = window.EqEditor.Toolbar.link( ids.toolbar ).addTextArea( eqTextArea );
+		eqToolbar = window.EqEditor.Toolbar.link( ids.toolbar, design.toolbar || "default", design.toolbarScale || 1 ).addTextArea( eqTextArea );
 
 		var latexToggle = domNode.querySelector( "#" + ids.toggleLatex );
 
@@ -320,6 +358,8 @@ EqNEditorWidget.prototype.render = function ( parent, nextSibling ) {
 			if ( eqMathView ) eqMathView.setInline( inline );
 			eqOutput.setInline( inline );
 		} );
+
+		applyDesign( domNode, design, latexToggle, domNode.querySelector( "#" + ids.insertMode ) );
 
 		var okBtn = domNode.querySelector( ".cc-ok" );
 		okBtn.disabled = false;

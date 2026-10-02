@@ -17,6 +17,10 @@ cp -R ../plugin plugins/codecogs/eqneditor
 
 TIDDLYWIKI_PLUGIN_PATH="$(pwd)/plugins" npx --yes tiddlywiki@5.4.1 . --build index --build plugin
 
+# The wiki in fxplugins.codecogs.com's TiddlyWiki downloads: the same plugin, with placeholders
+# for the visitor's licence, design and starting tiddler - see ../bundle-wiki/README.md.
+TIDDLYWIKI_PLUGIN_PATH="$(pwd)/plugins" npx --yes tiddlywiki@5.4.1 ../bundle-wiki --build index
+
 echo ""
 echo "Built output/index.html - open it, edit (or create) a tiddler, and use the Equation"
 echo "button in the editor toolbar."
