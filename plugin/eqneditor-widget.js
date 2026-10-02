@@ -17,7 +17,7 @@ way every other adapter in eqneditor-v5-plugins does it (see tinymce/v6/eqnedito
 than needing a bridge tiddler kept in sync by polling.
 
 The shared EqEditor API (TextArea/Toolbar/Output/History/MathView) is loaded at runtime from
-fxeditor.codecogs.com, same host and API surface as every other adapter here - override with
+fxtex.codecogs.com, same host and API surface as every other adapter here - override with
 $:/config/codecogs/eqneditor/Server (a host, or a full origin such as "http://localhost:8010" for local development against
 eqneditor-v5-www) and $:/config/codecogs/eqneditor/RenderUrl.
 
@@ -26,7 +26,7 @@ eqneditor-v5-www) and $:/config/codecogs/eqneditor/RenderUrl.
 
 var Widget = require( "$:/core/modules/widgets/widget.js" ).widget;
 
-var DEFAULT_SERVER = "fxeditor.codecogs.com";
+var DEFAULT_SERVER = "fxtex.codecogs.com";
 var DEFAULT_RENDER_URL = "https://latex.codecogs.com";
 
 var scriptPromises = {};
@@ -90,7 +90,7 @@ function injectStyleOverridesOnce( fontUrl ) {
 	var style = document.createElement( "style" );
 	style.id = "cc-eqneditor-style-overrides";
 	style.textContent = '@font-face { font-family: "Latin Modern Math"; font-display: swap; ' +
-		'src: local("Latin Modern Math"), url("' + fontUrl + '") format("opentype"); }' +
+		'src: local("Latin Modern Math"), url("' + fontUrl.replace( /prototypes\/latinmodern-math\.otf$/, 'fonts/LatinModernMath-Regular.woff2' ) + '") format("woff2"), url("' + fontUrl + '") format("opentype"); }' +
 		// Undo host resets (e.g. .cke_reset_all *) inside the toolbar icons and the maths view's MathML.
 		'.CCToolbar svg:has(g[font-family]), .CCToolbar svg:has(g[font-family]) * { font: revert-layer !important; }' +
 		// Older API builds draw the icons as plain <text>, fonted by the API's own .cc_panel rule instead.
