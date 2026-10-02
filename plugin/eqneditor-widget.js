@@ -13,7 +13,7 @@ CodeCogs UI is only ever the current state of a third-party script's live DOM, n
 TiddlyWiki's own reactive tiddler/transclusion model has any state for. Insert/Cancel are part of
 this widget's own DOM instead of separate wikitext <$button>s so the click handler can read that
 state - eqTextArea.getTextArea().textContent, eqOutput.exportAs() - synchronously, the same
-way every other adapter in eqneditor-v5-plugins does it (see tinymce/v6/eqneditor.js), rather
+way every other adapter in fxPlugins does it (see tinymce/v6/eqneditor.js), rather
 than needing a bridge tiddler kept in sync by polling.
 
 The shared EqEditor API (TextArea/Toolbar/Output/History/MathView) is loaded at runtime from

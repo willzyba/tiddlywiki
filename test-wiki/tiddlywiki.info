@@ -1,5 +1,5 @@
 {
-    "description": "eqneditor-v5-plugins TiddlyWiki test wiki",
+    "description": "fxPlugins TiddlyWiki test wiki",
     "plugins": [
         "codecogs/eqneditor"
     ],
