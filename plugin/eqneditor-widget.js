@@ -59,7 +59,7 @@ function loadScriptOnce( url ) {
 
 // EqEditor.init() switches the converter every TextArea/MathView/Toolbar construction takes on
 // to fxTeX Pro - skip it and they keep the placeholder converter for their whole lifetime, even
-// once eqneditor.api.min.js itself has loaded. Called once per page; an empty licence is the
+// once fxeditor.api.min.js itself has loaded. Called once per page; an empty licence is the
 // normal, expected state until a real one is configured.
 var initPromise = null;
 
@@ -323,9 +323,9 @@ EqNEditorWidget.prototype.render = function ( parent, nextSibling ) {
 	// Full-URL overrides, not just the host - the default assumes https, which a local dev
 	// server (see other/tiddlywiki/test-wiki's config tiddlers) generally isn't.
 	var scriptUrl = this.wiki.getTiddlerText( "$:/config/codecogs/eqneditor/ScriptUrl",
-		origin + "/eqneditor.api.min.js" ).trim();
+		origin + "/fxeditor.api.min.js" ).trim();
 	var cssUrl = this.wiki.getTiddlerText( "$:/config/codecogs/eqneditor/CssUrl",
-		origin + "/eqneditor.css" ).trim();
+		origin + "/fxeditor.css" ).trim();
 
 	var domNode = this.document.createElement( "div" );
 	domNode.id = ids.root;
