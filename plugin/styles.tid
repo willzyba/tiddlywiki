@@ -2,10 +2,11 @@ title: $:/plugins/codecogs/eqneditor/styles
 tags: $:/tags/Stylesheet
 type: text/css
 
-/* Wide enough for the equation toolbar without it wrapping; narrower screens get what fits. */
+/* Wide enough for the equation toolbar without it wrapping; narrower screens - or a narrower
+   drop-down, from `design.width` - get what fits. */
 .cc-eqneditor-dropdown {
 	padding: 10px 12px;
 	width: 850px;
-	max-width: calc(100vw - 32px);
+	max-width: min(100%, calc(100vw - 32px));
 	box-sizing: border-box;
 }

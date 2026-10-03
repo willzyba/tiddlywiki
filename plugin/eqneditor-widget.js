@@ -105,9 +105,10 @@ function injectStyleOverridesOnce( fontUrl ) {
 		apiMathRules() +
 		'.CCEqnEditor { display: flex !important; flex-direction: column !important; height: 480px !important; }' +
 		'.CCEqnEditor .CCEditorBar, .CCEqnEditor .CCToolbarHost { flex: 0 0 auto; }' +
-		// Left to stretch across the dropdown, the toolbar's "fit" pass unwraps every button group
-		// wider than the reference layout; sized to its own content it wraps the same way.
-		'.CCEqnEditor .CCToolbarHost { align-self: flex-start; width: auto; }' +
+		// The toolbar as wide as the dialog, no wider: sized to its own content instead (width: auto)
+		// it kept the toolbar's whole row and ran past a narrow dialog (`design.width`); at 100% the
+		// toolbar scrolls.
+		'.CCEqnEditor .CCToolbarHost { align-self: flex-start; width: 100%; }' +
 		'.CCEqnEditor .CCMathViewHost { flex: 1 1 auto; min-height: 0; display: flex; align-items: center; ' +
 			'justify-content: center; overflow: auto; }' +
 		'.CCEqnEditor[data-inline="on"] .CCMathViewHost { justify-content: flex-start; }' +
@@ -119,7 +120,7 @@ function injectStyleOverridesOnce( fontUrl ) {
 		'.tc-drop-down .CCEqnEditor .CCHistory button { display: inline-block !important; width: auto !important; padding: revert-layer !important; margin: revert-layer !important; ' +
 			'text-align: center !important; line-height: normal !important; vertical-align: middle !important; }' +
 		// The bottom bar: toggles left, Insert-as and the dialog's buttons right, one type size. All !important - host dialog resets otherwise restyle it.
-		'.cc-eqn-bar { display: flex !important; align-items: center !important; gap: 16px !important; flex: 0 0 auto !important; ' +
+		'.cc-eqn-bar { display: flex !important; flex-wrap: wrap !important; align-items: center !important; gap: 16px !important; flex: 0 0 auto !important; ' +
 			'margin: 8px 0 0 !important; padding: 10px 0 0 !important; border: 0 !important; border-top: 1px solid #e2e8f0 !important; ' +
 			'background: none !important; font: 13px/1.3 system-ui, -apple-system, "Segoe UI", Arial, sans-serif !important; color: #1c2530 !important; }' +
 		'.cc-eqn-bar-right { display: flex !important; align-items: center !important; gap: 8px !important; margin: 0 0 0 auto !important; padding: 0 !important; font: inherit !important; color: inherit !important; }' +
@@ -244,12 +245,12 @@ function apiMathRules() {
 		try { rules = document.styleSheets[ i ].cssRules; } catch ( e ) { continue; }
 		for ( var j = 0; j < rules.length; j++ ) {
 			var r = rules[ j ], decls = '';
-			if ( !r.selectorText || !/(^|,)\s*\.(fxtex|CCMathView)\b/.test( r.selectorText ) ) continue;
+			if ( !r.selectorText || !/(^|,)\s*(:where\(\.fxEditor\)\s*)?\.(fxtex|CCMathView)\b/.test( r.selectorText ) ) continue;
 			for ( var k = 0; k < r.style.length; k++ ) {
 				decls += r.style[ k ] + ':' + r.style.getPropertyValue( r.style[ k ] ) + ' !important;';
 			}
 			if ( decls ) {
-				out += r.selectorText.split( ',' ).map( function ( s ) {
+				out += r.selectorText.replace( /:where\(\.fxEditor\)\s*/g, '' ).split( ',' ).map( function ( s ) {
 					s = s.trim();
 					return /^\.CCMathView\b/.test( s ) ? s : '.CCMathView ' + s;
 				} ).join( ',' ) + '{' + decls + '}';
@@ -350,8 +351,8 @@ EqNEditorWidget.prototype.render = function ( parent, nextSibling ) {
 			switchHtml( ids.toggleLatex, "LaTeX markup", "Show or hide the LaTeX markup" ) +
 			'<div class="cc-eqn-bar-right">' +
 				'<select class="cc-eqn-select" id="' + ids.insertMode + '" title="How to insert the equation">' +
-					'<option value="mathml" selected>Insert as MathML</option>' +
-					'<option value="svg">Insert as image (SVG)</option>' +
+					'<option value="mathml" selected>Insert MathML</option>' +
+					'<option value="svg">Insert SVG</option>' +
 				'</select>' +
 				'<button type="button" class="cc-eqn-btn cc-cancel">Cancel</button>' +
 				'<button type="button" class="cc-eqn-btn cc-eqn-primary cc-ok" disabled>OK</button>' +
