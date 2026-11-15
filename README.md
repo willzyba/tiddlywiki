@@ -127,7 +127,7 @@ A minimal wiki used to build and try the plugin. `test-wiki/build.sh` copies `pl
 
 The test wiki's `tiddlers/config-server.tid` and `config-licence.tid` hold the placeholders
 `{{EQN_SERVER}}` and `{{FXTEXPRO_KEY}}`, which the fxplugins site fills in when it serves the
-wiki. To use `test-wiki/output/index.html` on its own, replace them with `fxtex.codecogs.com`
+wiki. To use `test-wiki/output/index.html` on its own, replace them with `https://fxtex.codecogs.com`
 and your licence key before building.
 
 ### `bundle-wiki/`
