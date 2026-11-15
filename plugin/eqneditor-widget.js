@@ -27,7 +27,7 @@ eqneditor-v5-www) and $:/config/codecogs/eqneditor/RenderUrl.
 var Widget = require( "$:/core/modules/widgets/widget.js" ).widget;
 
 var DEFAULT_SERVER = "fxtex.codecogs.com";
-var DEFAULT_RENDER_URL = "https://latex.codecogs.com";
+var DEFAULT_RENDER_URL = "https://fxtex.codecogs.com";
 
 var scriptPromises = {};
 
@@ -878,8 +878,8 @@ EqNEditorWidget.prototype.render = function ( parent, nextSibling ) {
 
 			var mode = domNode.querySelector( "#" + ids.insertMode ).value;
 			// Wikitext attribute values are taken literally - no entity decoding - so they are
-			// written raw rather than HTML-escaped: "&amp;" would reach latex.codecogs.com as-is.
-			// referrerpolicy explicitly: latex.codecogs.com identifies the calling site by referer,
+			// written raw rather than HTML-escaped: "&amp;" would reach the rendering service as-is.
+			// referrerpolicy explicitly: the rendering service identifies the calling site by referer,
 			// and a stricter page policy would otherwise send none.
 			var text = mode === "svg"
 				? '<img class="fxtex" src="' + outputCode( eqOutput, "url" ) + '" alt=' + wikitextAttr( latex ) +

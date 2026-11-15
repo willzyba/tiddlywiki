@@ -6,6 +6,6 @@ type: text/vnd.tiddlywiki
 
 Sample text and an equation:
 
-<img src="https://latex.codecogs.com/svg.image?\sum_{i=0}^{n}a_i^2&plus;b" alt="\sum_{i=0}^{n}a_i^2+b">
+<img src="https://fxtex.codecogs.com/svg.image?\sum_{i=0}^{n}a_i^2&plus;b" alt="\sum_{i=0}^{n}a_i^2+b">
 
 Edit this tiddler (the pencil button above), then use the ''Equation'' button in the editor toolbar.

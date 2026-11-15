@@ -1,3 +1,5 @@
+<img src="https://raw.githubusercontent.com/willzyba/tiddlywiki/main/screenshots/icon.png" alt="" width="96" align="right">
+
 # fxEditor for TiddlyWiki
 
 The fxEditor plugin for [TiddlyWiki](https://tiddlywiki.com) 5.4 and later adds an
@@ -78,7 +80,7 @@ Each setting is a tiddler. Create the ones you need:
 | `$:/config/codecogs/eqneditor/Licence` | *(empty)* | Your fxEditor licence key. Required. |
 | `$:/config/codecogs/eqneditor/Design` | *(empty)* | The editor's look, as JSON: dialog width, height and scale, toolbar panels and size, colour, equation and markup sizes, undo/redo. Build one in [Customise and download](https://fxplugins.codecogs.com/docs/tiddlywiki.html#customise), which writes this tiddler for you. |
 | `$:/config/codecogs/eqneditor/Server` | `fxtex.codecogs.com` | Host the equation editor is loaded from - a host (https is assumed) or a full origin such as `http://localhost:8010`. |
-| `$:/config/codecogs/eqneditor/RenderUrl` | `https://latex.codecogs.com` | The service that draws equations inserted as images. |
+| `$:/config/codecogs/eqneditor/RenderUrl` | `https://fxtex.codecogs.com` | The service that draws equations inserted as images. |
 | `$:/config/codecogs/eqneditor/ScriptUrl`, `.../CssUrl` | from `Server` | Full URLs of the editor bundle and its stylesheet, when the defaults do not suit. |
 
 ## Licence
