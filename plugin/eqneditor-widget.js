@@ -26,7 +26,7 @@ eqneditor-v5-www) and $:/config/codecogs/eqneditor/RenderUrl.
 
 var Widget = require( "$:/core/modules/widgets/widget.js" ).widget;
 
-var DEFAULT_SERVER = "fxtex.codecogs.com";
+var DEFAULT_SERVER = "https://fxtex.codecogs.com";
 var DEFAULT_RENDER_URL = "https://fxtex.codecogs.com";
 
 var scriptPromises = {};
