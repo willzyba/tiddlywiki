@@ -5,7 +5,8 @@ Editor. It opens on the maths view; ''LaTeX markup'' and ''Inline'' are toggles 
 bar, next to ''Insert as'', which writes the equation at the cursor either as MathML or as an
 `<img>` rendered by latex.codecogs.com.
 
-Put your fxTeX Pro licence key in `$:/config/codecogs/eqneditor/Licence`. The editor loads from
-`fxtex.codecogs.com` at runtime - override the host with `$:/config/codecogs/eqneditor/Server`
-(a host, or a full origin such as `http://localhost:8010`) and the rendering host with
-`$:/config/codecogs/eqneditor/RenderUrl` if needed.
+Put your fxTeX Pro licence key, from https://fxeditor.codecogs.com/purchase, in
+`$:/config/codecogs/eqneditor/Licence`. The editor loads from `fxtex.codecogs.com` at runtime -
+override the host with `$:/config/codecogs/eqneditor/Server` (a host, or a full origin such as
+`http://localhost:8010`) and the rendering host with `$:/config/codecogs/eqneditor/RenderUrl` if
+needed.

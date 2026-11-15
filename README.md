@@ -53,11 +53,7 @@ Then add your licence key (see [Licence key](#licence-key)).
 
 Equations are rendered by fxTeX Pro, which needs a licence key for your domain.
 
-- Get a key from https://fxeditor.codecogs.com/purchase - paid plans, and a free trial.
-- Teachers and students can get a free individual licence at
-  https://fxeditor.codecogs.com/academic.
-- Manage your keys - add domains, copy a key - in the licence manager at
-  https://fxeditor.codecogs.com/login.
+Get your licence key from https://fxeditor.codecogs.com/purchase.
 
 The key goes in the tiddler `$:/config/codecogs/eqneditor/Licence`. Create it in your wiki with
 the key as its only text - or, in a Node.js wiki, as a file in `tiddlers/`:
@@ -87,8 +83,11 @@ Each setting is a tiddler. Create the ones you need:
 
 ## Licence
 
-Copyright CodeCogs (https://www.codecogs.com). This repository does not yet carry a licence
-file.
+Copyright (c) 2026 CodeCogs, Zyba Ltd.
+
+The plugin and the rest of this repository's own code are released under the MIT licence - see
+[`LICENSE`](https://github.com/willzyba/tiddlywiki/blob/main/LICENSE). TiddlyWiki is licensed
+separately by its own authors. fxEditor and fxTeX Pro need their own licence key, as above.
 
 ## What is in this repository
 
