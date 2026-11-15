@@ -1,62 +1,136 @@
-# TiddlyWiki
+# fxEditor for TiddlyWiki
 
-A plugin for TiddlyWiki 5 (the current, actively-developed TiddlyWiki - see `plugin/`), plus a
-small test wiki that builds it and lets you try it in a browser (`test-wiki/`).
+The fxEditor plugin for [TiddlyWiki](https://tiddlywiki.com) 5.4 and later adds an
+**Equation** button to the tiddler editor's toolbar. It opens fxEditor, CodeCogs' equation
+editor - a toolbar of symbols and structures, a LaTeX view and a rendered maths view - and
+inserts the equation into the tiddler at the cursor, as MathML (the default, which TiddlyWiki
+displays natively) or as an SVG image. The equation goes into the tiddler's text as markup;
+there is no way to reopen an inserted equation in the editor, so to change one, insert it again
+and delete the old markup.
 
-(The old `twmath.html` - CodeCogs' integration for TiddlyWiki Classic, a different, unrelated
-codebase discontinued in 2013, calling `codecogs.com/editor.js`/`gif.latex?...` endpoints that no
-longer exist - has been removed; TW Classic isn't something the current EqEditor API or `plugin/`
-here can plug into, so it couldn't be "updated" the way CKEditor 4/TinyMCE 4 were.)
+It has been tested against TiddlyWiki 5.4.1.
 
-## `plugin/`
+## Screenshots
 
-A proper TiddlyWiki 5 plugin: an ''Equation'' button in the tiddler editor toolbar that opens the
-CodeCogs Equation Editor in the same layout as every other adapter in this repo - toolbar and
-maths view on top, then a bottom bar with the *Inline* and *LaTeX markup* toggles on the left and
-*Insert as*, *Cancel* and *OK* on the right. It inserts the equation at the cursor as MathML (the
-default - TiddlyWiki renders it natively) or as an SVG `<img>` from the rendering service.
+![A tiddler being edited, with the Equation (fx) button at the end of the editor toolbar](https://raw.githubusercontent.com/willzyba/tiddlywiki/main/screenshots/toolbar.png)
 
-- `eqneditor-widget.js` - a custom widget (TiddlyWiki's mechanism for embedding a third-party
-  JS library's own live DOM, rather than something wikitext's own reactive model has state for)
-  that mounts the shared `EqEditor` API, exactly like every other adapter in this repo.
-- `toolbar-button.tid` / `dropdown.tid` - the toolbar button and the popup it opens, following the
-  same `dropdown:` pattern TiddlyWiki's own core toolbar buttons use (e.g.
+*A tiddler in edit mode: the **Equation** button (fx) is at the end of the editor toolbar.*
+
+![The fxEditor dialog in TiddlyWiki, with Insert MathML, Cancel and OK](https://raw.githubusercontent.com/willzyba/tiddlywiki/main/screenshots/dialog.png)
+
+*The equation editor that the **Equation** button opens.*
+
+## Links
+
+- Documentation and live demo: https://fxplugins.codecogs.com/docs/tiddlywiki.html
+- Customise and download: https://fxplugins.codecogs.com/docs/tiddlywiki.html#customise
+- All fxEditor plugins: https://fxplugins.codecogs.com
+- fxEditor: https://fxeditor.codecogs.com
+
+## Installing from git
+
+The plugin is installed into a wiki as a single file, `codecogs-eqneditor.json`, which is built
+from `plugin/` in this repository. Building needs Node.js; the build script fetches TiddlyWiki
+5.4.1 itself with `npx`.
+
+```bash
+git clone https://github.com/willzyba/tiddlywiki.git
+cd tiddlywiki
+./test-wiki/build.sh
+```
+
+This writes `test-wiki/output/codecogs-eqneditor.json`. Drag it onto your wiki in the browser
+and confirm the import, then save and reload. The **Equation** button appears in the editor
+toolbar.
+
+For a wiki run with TiddlyWiki on Node.js, you can instead copy the `plugin/` folder into the
+wiki folder's `plugins/` subfolder (for example as `plugins/codecogs-eqneditor`), and
+restart.
+
+Then add your licence key (see [Licence key](#licence-key)).
+
+## Licence key
+
+Equations are rendered by fxTeX Pro, which needs a licence key for your domain.
+
+- Get a key from https://fxeditor.codecogs.com/purchase - paid plans, and a free trial.
+- Teachers and students can get a free individual licence at
+  https://fxeditor.codecogs.com/academic.
+- Manage your keys - add domains, copy a key - in the licence manager at
+  https://fxeditor.codecogs.com/login.
+
+The key goes in the tiddler `$:/config/codecogs/eqneditor/Licence`. Create it in your wiki with
+the key as its only text - or, in a Node.js wiki, as a file in `tiddlers/`:
+
+```
+title: $:/config/codecogs/eqneditor/Licence
+type: text/plain
+
+fx_pk_your-key-here
+```
+
+A licence covers the domain the wiki is served from. A wiki opened from a file on your own
+computer has no domain for the licence to match, so serve it from your licensed site, or
+[ask us](https://fxeditor.codecogs.com/contact).
+
+### Settings
+
+Each setting is a tiddler. Create the ones you need:
+
+| Tiddler | Default | Meaning |
+|---|---|---|
+| `$:/config/codecogs/eqneditor/Licence` | *(empty)* | Your fxEditor licence key. Required. |
+| `$:/config/codecogs/eqneditor/Design` | *(empty)* | The editor's look, as JSON: dialog width, height and scale, toolbar panels and size, colour, equation and markup sizes, undo/redo. Build one in [Customise and download](https://fxplugins.codecogs.com/docs/tiddlywiki.html#customise), which writes this tiddler for you. |
+| `$:/config/codecogs/eqneditor/Server` | `fxtex.codecogs.com` | Host the equation editor is loaded from - a host (https is assumed) or a full origin such as `http://localhost:8010`. |
+| `$:/config/codecogs/eqneditor/RenderUrl` | `https://latex.codecogs.com` | The service that draws equations inserted as images. |
+| `$:/config/codecogs/eqneditor/ScriptUrl`, `.../CssUrl` | from `Server` | Full URLs of the editor bundle and its stylesheet, when the defaults do not suit. |
+
+## Licence
+
+Copyright CodeCogs (https://www.codecogs.com). This repository does not yet carry a licence
+file.
+
+## What is in this repository
+
+### `plugin/`
+
+The TiddlyWiki 5 plugin, `$:/plugins/codecogs/eqneditor`.
+
+- `eqneditor-widget.js` - a custom widget that mounts the equation editor, as every other
+  fxEditor plugin does, and inserts the result at the cursor with a plain
+  `tm-edit-text-operation` message (the same one TiddlyWiki's own toolbar buttons send).
+- `toolbar-button.tid` / `dropdown.tid` - the toolbar button and the popup it opens, following
+  the `dropdown:` pattern TiddlyWiki's own core toolbar buttons use (for example
   `core/ui/EditorToolbar/picture.tid`).
 - `styles.tid` - the dropdown's size (850px, capped to the window). Everything else the dialog
   needs - including undoing TiddlyWiki's `.tc-drop-down svg`/button rules, which would otherwise
-  shrink the toolbar icons - is injected by `eqneditor-widget.js`, as in the other adapters.
-- `icon.tid`, `readme.tid`, `plugin.info` - the plugin's icon, in-wiki description, and manifest.
+  shrink the toolbar icons - is injected by `eqneditor-widget.js`.
+- `icon.tid`, `readme.tid`, `plugin.info` - the plugin's icon, in-wiki description and manifest.
 
-Loads its UI from `fxtex.codecogs.com` at runtime, same as CodeCogs' other editor plugins.
-Set your fxTeX Pro licence key in `$:/config/codecogs/eqneditor/Licence`. Override the host with
-`$:/config/codecogs/eqneditor/Server` - a host (https is assumed) or a full origin such as
-`http://localhost:8010` for a local dev server - and the rendering host with
-`$:/config/codecogs/eqneditor/RenderUrl`. `$:/config/codecogs/eqneditor/ScriptUrl` and
-`$:/config/codecogs/eqneditor/CssUrl` still override the two URLs individually. See
-`test-wiki/tiddlers/config-server.tid` and `config-licence.tid`; their `{{...}}` placeholders
-are filled in by whatever serves the wiki (`.claude/dev-server.py` locally, the fxplugins
-container in production).
+The dialog has the same layout as the other fxEditor plugins: toolbar and maths view on top,
+then a bottom bar with the *Inline* and *LaTeX* toggles on the left and *Insert as*, *Cancel*
+and *OK* on the right.
 
-## `test-wiki/`
-
-A minimal wiki (`tiddlywiki.info` + one starter tiddler) used to build and try the plugin. Needs
-the `tiddlywiki` npm package - nothing to install ahead of time, `build.sh` fetches it with `npx`.
-
-```bash
-./build.sh
-```
-
-This produces (git-ignored, regenerated each run - see `../.gitignore`):
-
-- `output/index.html` - a self-contained single-file wiki with the plugin installed. Open it,
-  edit (or create) a tiddler, and use the **Equation** button in the editor toolbar.
-- `output/codecogs-eqneditor.json` - the plugin packaged as a single importable file. Drag this
-  onto *any* other TiddlyWiki 5 (including a plain `empty.html` from tiddlywiki.com) to install it
-  there via TiddlyWiki's own built-in import - no server or CLI needed on the receiving end.
-
-Verified in a real browser against TiddlyWiki 5.4.1: the toolbar matches the reference editor,
-the toggles swap views, and OK inserts at the cursor via a plain `tm-edit-text-operation`
-message (the same one TiddlyWiki's own toolbar buttons send). An SVG insert renders once saved.
 MathML is written with its `<annotation>` and inter-tag whitespace removed, since TiddlyWiki
-would otherwise parse them as wikitext; the image's `alt` is quoted for wikitext, where
-attribute values are not HTML-entity-decoded.
+would otherwise parse them as wikitext; an image's `alt` is quoted for wikitext, where attribute
+values are not HTML-entity-decoded. An SVG insert renders once the tiddler is saved.
+
+### `test-wiki/`
+
+A minimal wiki used to build and try the plugin. `test-wiki/build.sh` copies `plugin/` into
+`test-wiki/plugins/` and builds, all git-ignored and regenerated each run:
+
+- `test-wiki/output/index.html` - a single-file wiki with the plugin installed.
+- `test-wiki/output/codecogs-eqneditor.json` - the plugin as a single importable file.
+- `bundle-wiki/output/index.html` - see below.
+
+The test wiki's `tiddlers/config-server.tid` and `config-licence.tid` hold the placeholders
+`{{EQN_SERVER}}` and `{{FXTEXPRO_KEY}}`, which the fxplugins site fills in when it serves the
+wiki. To use `test-wiki/output/index.html` on its own, replace them with `fxtex.codecogs.com`
+and your licence key before building.
+
+### `bundle-wiki/`
+
+The wiki in the fxplugins.codecogs.com downloads for TiddlyWiki: the plugin installed, with
+placeholders for the visitor's licence key, design and a page of equations, which the site fills
+in. See `bundle-wiki/README.md`.
