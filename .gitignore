@@ -2,3 +2,5 @@
 test-wiki/output/
 test-wiki/plugins/
 bundle-wiki/output/
+.DS_Store
+node_modules/
