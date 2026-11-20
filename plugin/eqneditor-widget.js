@@ -61,12 +61,14 @@ function loadScriptOnce( url ) {
 // to fxTeX Pro - skip it and they keep the placeholder converter for their whole lifetime, even
 // once fxeditor.api.min.js itself has loaded. Called once per page; an empty licence is the
 // normal, expected state until a real one is configured.
+// fxTeX Pro's optional packages are off unless named here: without them \ce, \chemfig,
+// \dv and the picture environment were unknown commands, shown as their letters.
 var initPromise = null;
 
 function ensureInit( licence ) {
 	if ( initPromise ) return initPromise;
 	initPromise = ( typeof EqEditor.init === "function" )
-		? EqEditor.init( { licence: licence || "" } ).catch( function ( err ) {
+		? EqEditor.init( { licence: licence || "", packages: [ "mhchem", "chemfig", "physics", "picture" ] } ).catch( function ( err ) {
 			window.console && console.warn( "fxTeX Pro: " + ( err && err.message || err ) );
 		} )
 		: Promise.resolve();
@@ -816,6 +818,7 @@ EqNEditorWidget.prototype.render = function ( parent, nextSibling ) {
 				'<select class="cc-eqn-select" id="' + ids.insertMode + '" title="How to insert the equation">' +
 					'<option value="mathml" selected>Insert MathML</option>' +
 					'<option value="svg">Insert SVG</option>' +
+					'<option value="latex">Insert LaTeX</option>' +
 				'</select>' +
 				'<button type="button" class="cc-eqn-btn cc-cancel">Cancel</button>' +
 				'<button type="button" class="cc-eqn-btn cc-eqn-primary cc-ok" disabled>OK</button>' +
@@ -893,7 +896,12 @@ EqNEditorWidget.prototype.render = function ( parent, nextSibling ) {
 			// written raw rather than HTML-escaped: "&amp;" would reach the rendering service as-is.
 			// referrerpolicy explicitly: the rendering service identifies the calling site by referer,
 			// and a stricter page policy would otherwise send none.
-			var text = mode === "svg"
+			// "Insert as LaTeX": the LaTeX as text, for fxTeX Pro to typeset where the page is shown -
+			// $...$ inline, $$...$$ on its own line, the delimiters it looks for by default.
+			var inline = domNode.querySelector( "#" + ids.toggleInline ).checked;
+			var text = mode === "latex"
+				? ( inline ? "$" + latex + "$" : "$$" + latex + "$$" )
+				: mode === "svg"
 				? '<img class="fxtex" src="' + outputCode( eqOutput, "url" ) + '" alt=' + wikitextAttr( latex ) +
 					' referrerpolicy="origin">'
 				: mathmlForWikitext( outputCode( eqOutput, "mathml" ) );

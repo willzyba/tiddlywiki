@@ -6,7 +6,9 @@ The fxEditor plugin for [TiddlyWiki](https://tiddlywiki.com) 5.4 and later adds 
 **Equation** button to the tiddler editor's toolbar. It opens fxEditor, CodeCogs' equation
 editor - a toolbar of symbols and structures, a LaTeX view and a rendered maths view - and
 inserts the equation into the tiddler at the cursor, as MathML (the default, which TiddlyWiki
-displays natively) or as an SVG image. The equation goes into the tiddler's text as markup;
+displays natively), as an SVG image, or as LaTeX text (`$...$` inline, `$$...$$` on its own
+line) for [fxTeX](https://fxeditor.codecogs.com/docs/0-fxtex.php) to typeset on the page that
+shows it. The equation goes into the tiddler's text as markup;
 there is no way to reopen an inserted equation in the editor, so to change one, insert it again
 and delete the old markup.
 
